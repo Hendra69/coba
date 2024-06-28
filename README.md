@@ -1,64 +1,355 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+# import-xls-xlsx-csv-file-into-mysql-databse-using-laravel
+Import XLS, XLSX and CSV File into MySQL Database Using Laravel Application
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Laravel Version: 10.20.0
 
-## About Laravel
+PHP Version: 8.2.4
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Requirements
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```
+PHP: ^7.2\|^8.0
+Laravel: ^5.8
+PhpSpreadsheet: `^1.21
+PHP extension php_zip enabled
+PHP extension php_xml enabled
+PHP extension php_gd2 enabled
+PHP extension php_iconv enabled
+PHP extension php_simplexml enabled
+PHP extension php_xmlreader enabled
+PHP extension php_zlib enabled
+```
+maatwebsite/excel 3.1
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+Step 1: Create Laravel project with below command in the terminal
 
-## Learning Laravel
+```bash
+  composer create-project laravel/laravel import_xls_xlsx_csv_files_to_mysql
+```
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Step 2: Now let's create database migration using below artisan command:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```bash
+  php artisan make:migration create_employee_table
+```
 
-## Laravel Sponsors
+Step 3: Now add table fields in the migration class in the up() method.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+```php
+Schema::create('employee', function (Blueprint $table) {
+            $table->bigIncrements('id');
+            $table->string('name', 200);
+            $table->integer('age', );
+            $table->date('doj');
+            $table->timestamps();
+        });
+```
 
-### Premium Partners
+Step 4: Run the migrate command to generate table in the database:
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+```bash
+  php artisan migrate
+```
 
-## Contributing
+Step 5: create model using following command:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+  php artisan make:model Employee
+```
 
-## Code of Conduct
+Step 6: Add following code into your Employee Model
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+    protected $table="employee";
 
-## Security Vulnerabilities
+    protected $fillable = ['name','age','doj'];
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Step 7: Package Installation
 
-## License
+```bash
+  composer require maatwebsite/excel
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The Maatwebsite\Excel\ExcelServiceProvider is auto-discovered and registered by default.
+
+If you want to register it yourself, add the ServiceProvider in config/app.php:
+
+
+```php
+'providers' => [
+    /*
+     * Package Service Providers...
+     */
+    Maatwebsite\Excel\ExcelServiceProvider::class,
+]
+```
+
+The Excel facade is also auto-discovered.
+
+If you want to add it manually, add the Facade in config/app.php:
+
+
+```php
+    'aliases' => [
+    ...
+    'Excel' => Maatwebsite\Excel\Facades\Excel::class,
+]
+```
+
+To publish the config, run the vendor publish command:
+
+```php
+php artisan vendor:publish --provider="Maatwebsite\Excel\ExcelServiceProvider" --tag=config
+
+```
+
+This will create a new config file named config/excel.php.
+
+
+Step 8: Create an import class in app/Imports
+
+You may do this by using the make:import command.
+
+```bash
+  php artisan make:import EmployeeImport --model=Employee
+```
+```bash
+  php artisan make:import EmployeeCSVImport --model=Employee
+```
+
+The File can be found in app/Imports
+
+```bash
+.
+├── app
+│   ├── Imports
+│   │├── EmployeeImport.php
+│   │├── EmployeeCSVImport.php
+│ 
+└── composer.json
+```
+
+Step 9: Create new controller
+
+```bash
+php artisan make:controller EmployeeController
+```
+
+Add Following Traits:
+
+```bash
+use App\Models\Employee;
+```
+
+```bash
+use App\Imports\{EmployeesImport,EmployeeCSVImport};
+```
+
+```bash
+use Maatwebsite\Excel\Facades\Excel;
+```
+
+```bash
+use Exception;
+```
+
+Step 10: In Controller (For Form Action)
+
+```bash
+    public function index()
+    {
+        return view('welcome'); 
+    }
+```
+
+Step 11: Call Import Function From EmployeeController
+
+```bash
+     public function store(Request $request)
+    {
+        try{
+        if ($request->hasFile('bulk_employee_records')) {
+
+            switch ($request->file('bulk_employee_records')->clientExtension()) {
+                case "xlsx":
+                    Excel::import(new EmployeesImport, $request->file('bulk_employee_records'));
+                    return redirect('/')->with('success', 'All good!');
+                case "xls":
+                    Excel::import(new EmployeesImport, $request->file('bulk_employee_records'));
+                    return redirect('/')->with('success', 'All good!');
+                case "csv":
+                    Excel::import(new EmployeeCSVImport, $request->file('bulk_employee_records'));
+                    return redirect('/')->with('success', 'All good!');
+                default:
+                    throw new \Exception('Invalid file format');
+            }
+        }
+    }
+    catch(Exception $e) {
+        return redirect('/')->with('error',$e->getMessage());
+    }
+    catch(\Maatwebsite\Excel\Validators\ValidationException $ve){
+        return redirect('/')->with('error',$ve->failures());
+        }
+    }
+```
+
+Step 12: View Blade File (welcome.blade.php)
+
+```bash
+<!DOCTYPE html>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container mt-3">
+            @include('flash-message')
+            <form action="{{ route('store_employee_records') }}" method="post" enctype="multipart/form-data">
+                @csrf
+                <div class="mb-3 mt-3">
+                    <label for="email">File:</label>
+                    <input type="file" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel,text/comma-separated-values, text/csv, application/csv" required class="form-control" name="bulk_employee_records">
+                </div>
+                <button type="submit" class="btn btn-primary">Submit</button>
+            </form>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>
+```
+Step 12: Open EmployeesImport (App/Import/) and Add following code
+
+```bash
+<?php
+
+namespace App\Imports;
+
+use App\Models\Employee;
+use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+
+class EmployeesImport implements ToModel, WithChunkReading, SkipsEmptyRows, WithHeadingRow, WithBatchInserts
+{
+    use Importable;
+    /**
+    * @param array $employeeRecords
+    *
+    * @return \Illuminate\Database\Eloquent\Model|null
+    */
+    public function model(array $employeeRecords)
+    {
+        return new Employee([
+                'name' => $employeeRecords['name'],
+                'age' => $employeeRecords['age'],
+                'doj' => \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($employeeRecords['doj'])
+        ]);
+
+    }
+
+    //In case your heading row is not on the first row, you can easily specify this in your import class:
+    public function headingRow(): int
+    {
+        return 1;
+    }
+
+    //Chunk reading : increase in memory usage (Importing a large file can have a huge impact on the memory usage)
+    public function chunkSize(): int
+    {
+        return 1000;
+    }
+
+    //Importing a large file to Eloquent models, might quickly become a bottleneck as every row results into an insert query.
+    // limit the amount of queries done by specifying a batch size
+    //This concern only works with the ToModel concern.
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+}
+
+```
+
+Step 13: Open EmployeesCSVImport (App/Import/) and Add following code
+
+```bash
+<?php
+
+namespace App\Imports;
+
+use App\Models\Employee;
+use Maatwebsite\Excel\Concerns\Importable;
+use Maatwebsite\Excel\Concerns\ToModel;
+use Maatwebsite\Excel\Concerns\WithBatchInserts;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+
+class EmployeeCSVImport implements ToModel,WithChunkReading, SkipsEmptyRows, WithHeadingRow, WithBatchInserts
+{
+    /**
+    * @param array $row
+    *
+    * @return \Illuminate\Database\Eloquent\Model|null
+    */
+    public function model(array $employeeRecords)
+    {
+        return new Employee([
+            'name' => $employeeRecords['name'],
+            'age' => $employeeRecords['age'],
+            'doj' => date('Y-m-d',strtotime($employeeRecords['doj']))
+        ]);
+    }
+
+    //In case your heading row is not on the first row, you can easily specify this in your import class:
+    public function headingRow(): int
+    {
+        return 1;
+    }
+
+    //Chunk reading : increase in memory usage (Importing a large file can have a huge impact on the memory usage)
+    public function chunkSize(): int
+    {
+        return 1000;
+    }
+
+    //Importing a large file to Eloquent models, might quickly become a bottleneck as every row results into an insert query.
+    // limit the amount of queries done by specifying a batch size
+    //This concern only works with the ToModel concern.
+    public function batchSize(): int
+    {
+        return 1000;
+    }
+}
+```
+
+Step 14: Route
+
+```bash
+use App\Http\Controllers\EmployeeController;
+```
+
+```bash
+Route::get('/',[EmployeeController::class,'index']);
+
+Route::post('/',[EmployeeController::class,'store'])->name('store_employee_records');
+```
+
+Step 15: Clear the cache
+
+```bash
+php artisan optimize:clear
+```
+
+Step 16: Run the application
+
+```bash
+php artisan serve
+```

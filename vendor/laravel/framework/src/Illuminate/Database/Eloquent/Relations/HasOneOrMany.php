@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Concerns\InteractsWithDictionary;
+use Illuminate\Database\UniqueConstraintViolationException;
 
 abstract class HasOneOrMany extends Relation
 {
@@ -98,8 +99,11 @@ abstract class HasOneOrMany extends Relation
     {
         $whereIn = $this->whereInMethod($this->parent, $this->localKey);
 
-        $this->getRelationQuery()->{$whereIn}(
-            $this->foreignKey, $this->getKeys($models, $this->localKey)
+        $this->whereInEager(
+            $whereIn,
+            $this->foreignKey,
+            $this->getKeys($models, $this->localKey),
+            $this->getRelationQuery()
         );
     }
 
@@ -223,7 +227,7 @@ abstract class HasOneOrMany extends Relation
     }
 
     /**
-     * Get the first related record matching the attributes or create it.
+     * Get the first record matching the attributes. If the record is not found, create it.
      *
      * @param  array  $attributes
      * @param  array  $values
@@ -236,6 +240,22 @@ abstract class HasOneOrMany extends Relation
         }
 
         return $instance;
+    }
+
+    /**
+     * Attempt to create the record. If a unique constraint violation occurs, attempt to find the matching record.
+     *
+     * @param  array  $attributes
+     * @param  array  $values
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function createOrFirst(array $attributes = [], array $values = [])
+    {
+        try {
+            return $this->create(array_merge($attributes, $values));
+        } catch (UniqueConstraintViolationException $exception) {
+            return $this->where($attributes)->first();
+        }
     }
 
     /**
@@ -296,6 +316,19 @@ abstract class HasOneOrMany extends Relation
     }
 
     /**
+     * Attach a collection of models to the parent instance without raising any events to the parent model.
+     *
+     * @param  iterable  $models
+     * @return iterable
+     */
+    public function saveManyQuietly($models)
+    {
+        return Model::withoutEvents(function () use ($models) {
+            return $this->saveMany($models);
+        });
+    }
+
+    /**
      * Create a new instance of the related model.
      *
      * @param  array  $attributes
@@ -308,6 +341,41 @@ abstract class HasOneOrMany extends Relation
 
             $instance->save();
         });
+    }
+
+    /**
+     * Create a new instance of the related model without raising any events to the parent model.
+     *
+     * @param  array  $attributes
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function createQuietly(array $attributes = [])
+    {
+        return Model::withoutEvents(fn () => $this->create($attributes));
+    }
+
+    /**
+     * Create a new instance of the related model. Allow mass-assignment.
+     *
+     * @param  array  $attributes
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function forceCreate(array $attributes = [])
+    {
+        $attributes[$this->getForeignKeyName()] = $this->getParentKey();
+
+        return $this->related->forceCreate($attributes);
+    }
+
+    /**
+     * Create a new instance of the related model with mass assignment without raising model events.
+     *
+     * @param  array  $attributes
+     * @return \Illuminate\Database\Eloquent\Model
+     */
+    public function forceCreateQuietly(array $attributes = [])
+    {
+        return Model::withoutEvents(fn () => $this->forceCreate($attributes));
     }
 
     /**
@@ -325,6 +393,17 @@ abstract class HasOneOrMany extends Relation
         }
 
         return $instances;
+    }
+
+    /**
+     * Create a Collection of new instances of the related model without raising any events to the parent model.
+     *
+     * @param  iterable  $records
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function createManyQuietly(iterable $records)
+    {
+        return Model::withoutEvents(fn () => $this->createMany($records));
     }
 
     /**

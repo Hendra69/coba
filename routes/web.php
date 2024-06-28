@@ -1,12 +1,18 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\EmployeeController;
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+|
+| Here is where you can register web routes for your application. These
+| routes are loaded by the RouteServiceProvider and all of them will
+| be assigned to the "web" middleware group. Make something great!
+|
+*/
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/',[EmployeeController::class,'index']);
 
-//route resource
-Route::resource('/posts', \App\Http\Controllers\PostController::class);
-Route::resource('/tags', \App\Http\Controllers\TagsController::class);
-Route::resource('/services', \App\Http\Controllers\ServicesController::class);
+Route::post('/',[EmployeeController::class,'store'])->name('store_employee_records');

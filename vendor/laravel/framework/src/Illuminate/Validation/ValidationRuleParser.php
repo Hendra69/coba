@@ -3,7 +3,9 @@
 namespace Illuminate\Validation;
 
 use Closure;
+use Illuminate\Contracts\Validation\InvokableRule;
 use Illuminate\Contracts\Validation\Rule as RuleContract;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Exists;
@@ -86,14 +88,16 @@ class ValidationRuleParser
     {
         if (is_string($rule)) {
             return explode('|', $rule);
-        } elseif (is_object($rule)) {
+        }
+
+        if (is_object($rule)) {
             return Arr::wrap($this->prepareRule($rule, $attribute));
         }
 
         return array_map(
             [$this, 'prepareRule'],
             $rule,
-            array_fill(array_key_first($rule), count($rule), $attribute)
+            array_fill((int) array_key_first($rule), count($rule), $attribute)
         );
     }
 
@@ -108,6 +112,10 @@ class ValidationRuleParser
     {
         if ($rule instanceof Closure) {
             $rule = new ClosureValidationRule($rule);
+        }
+
+        if ($rule instanceof InvokableRule || $rule instanceof ValidationRule) {
+            $rule = InvokableValidationRule::make($rule);
         }
 
         if (! is_object($rule) ||
@@ -142,7 +150,7 @@ class ValidationRuleParser
 
         foreach ($data as $key => $value) {
             if (Str::startsWith($key, $attribute) || (bool) preg_match('/^'.$pattern.'\z/', $key)) {
-                foreach (Arr::flatten((array) $rules) as $rule) {
+                foreach ((array) $rules as $rule) {
                     if ($rule instanceof NestedRules) {
                         $compiled = $rule->compile($key, $value, $data);
 
@@ -272,13 +280,18 @@ class ValidationRuleParser
      */
     protected static function parseParameters($rule, $parameter)
     {
-        $rule = strtolower($rule);
+        return static::ruleIsRegex($rule) ? [$parameter] : str_getcsv($parameter);
+    }
 
-        if (in_array($rule, ['regex', 'not_regex', 'notregex'], true)) {
-            return [$parameter];
-        }
-
-        return str_getcsv($parameter);
+    /**
+     * Determine if the rule is a regular expression.
+     *
+     * @param  string  $rule
+     * @return bool
+     */
+    protected static function ruleIsRegex($rule)
+    {
+        return in_array(strtolower($rule), ['regex', 'not_regex', 'notregex'], true);
     }
 
     /**
@@ -297,7 +310,7 @@ class ValidationRuleParser
     }
 
     /**
-     * Expand and conditional rules in the given array of rules.
+     * Expand the conditional rules in the given array of rules.
      *
      * @param  array  $rules
      * @param  array  $data

@@ -2,10 +2,13 @@
 
 namespace Illuminate\Database\Connectors;
 
+use Illuminate\Database\Concerns\ParsesSearchPath;
 use PDO;
 
 class PostgresConnector extends Connector implements ConnectorInterface
 {
+    use ParsesSearchPath;
+
     /**
      * The default PDO connection options.
      *
@@ -119,32 +122,9 @@ class PostgresConnector extends Connector implements ConnectorInterface
     }
 
     /**
-     * Parse the "search_path" configuration value into an array.
-     *
-     * @param  string|array  $searchPath
-     * @return array
-     */
-    protected function parseSearchPath($searchPath)
-    {
-        if (is_string($searchPath)) {
-            preg_match_all('/[a-zA-z0-9$]{1,}/i', $searchPath, $matches);
-
-            $searchPath = $matches[0];
-        }
-
-        $searchPath = $searchPath ?? [];
-
-        array_walk($searchPath, function (&$schema) {
-            $schema = trim($schema, '\'"');
-        });
-
-        return $searchPath;
-    }
-
-    /**
      * Format the search path for the DSN.
      *
-     * @param  array|string  $searchPath
+     * @param  array  $searchPath
      * @return string
      */
     protected function quoteSearchPath($searchPath)
@@ -183,12 +163,18 @@ class PostgresConnector extends Connector implements ConnectorInterface
 
         $host = isset($host) ? "host={$host};" : '';
 
+        // Sometimes - users may need to connect to a database that has a different
+        // name than the database used for "information_schema" queries. This is
+        // typically the case if using "pgbouncer" type software when pooling.
+        $database = $connect_via_database ?? $database;
+        $port = $connect_via_port ?? $port ?? null;
+
         $dsn = "pgsql:{$host}dbname='{$database}'";
 
         // If a port was specified, we will add it to this Postgres DSN connections
         // format. Once we have done that we are ready to return this connection
         // string back out for usage, as this has been fully constructed here.
-        if (isset($config['port'])) {
+        if (! is_null($port)) {
             $dsn .= ";port={$port}";
         }
 
