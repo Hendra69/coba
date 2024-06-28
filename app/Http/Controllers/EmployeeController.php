@@ -30,23 +30,23 @@ class EmployeeController extends Controller
                 case "xlsx":
                     Excel::import(new EmployeesImport, $request->file('bulk_employee_records'));
 //                        ->toCollection(new EmployeesImport, $request->file('bulk_employee_records'));
-                    return redirect('/')->with('success', 'All good!');
+                    return redirect('/employee')->with('success', 'All good!');
                 case "xls":
                     Excel::import(new EmployeesImport, $request->file('bulk_employee_records'));
-                    return redirect('/')->with('success', 'All good!');
+                    return redirect('/employee')->with('success', 'All good!');
                 case "csv":
                     Excel::import(new EmployeeCSVImport, $request->file('bulk_employee_records'));
-                    return redirect('/')->with('success', 'All good!');
+                    return redirect('/employee')->with('success', 'All good!');
                 default:
                     throw new \Exception('Invalid file format');
             }
         }
     }
     catch(Exception $e) {
-        return redirect('/')->with('error',$e->getMessage());
+        return redirect('/employee')->with('error',$e->getMessage());
     }
     catch(\Maatwebsite\Excel\Validators\ValidationException $ve){
-        return redirect('/')->with('error',$ve->failures());
+        return redirect('/employee')->with('error',$ve->failures());
         }
     }
 
